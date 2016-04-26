@@ -1,0 +1,3 @@
+[submodule "KwikCluster"]
+	path = KwikCluster
+	url = https://github.com/mbarnes1/KwikCluster
