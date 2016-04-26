@@ -1,5 +1,5 @@
 import json
-from collections import izip
+from itertools import izip
 
 
 class TextCleaner(object):
