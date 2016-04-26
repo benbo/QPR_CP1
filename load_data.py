@@ -30,11 +30,11 @@ def write_text(text,out = 'ht_training_text.txt'):
             f.write(line.encode('utf-8'))
             f.write('\n')
 #load data
-filename = 'ht_training.txt'
+filename = 'ht_training_UPDATED'
 with open(filename,'r') as f:
     data =[json.loads(line) for line in f] 
 
-filename = 'ht_training.txt'
+filename = 'ht_training_2_2'
 with open(filename,'r') as f:
     data = data + [json.loads(line) for line in f] 
 
