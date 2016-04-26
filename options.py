@@ -1,3 +1,5 @@
+from hyperopt import hp
+
 space = {
     'model': hp.choice('model', [
         {

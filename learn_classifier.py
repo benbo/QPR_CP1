@@ -1,4 +1,5 @@
 import json
+import string
 from options import space
 from hyperopt import fmin, tpe, hp, Trials, space_eval
 from sklearn import svm
@@ -9,44 +10,27 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import cross_val_score
 from sklearn.feature_extraction.text import CountVectorizer
 
-filename = 'ht_training.txt'
-COUNT_BASE = {
-        'strip_accents':None, 'stop_words':'english', 'ngram_range':(1, 1), 'analyzer':'word', 'max_df':1.0, 'min_df':1, 'max_features':None, 'binary':False
-        }
 
-#load data
-with open(filename,'r') as f:
-    data =[json.loads(line) for line in f] 
+class ClassifierLearner(object):
+    def __init__(self):
 
-import string
-remove_punct_map = dict((ord(char), u' ') for char in string.punctuation)
-remove_digit_map = dict((ord(char), u' ') for char in string.digits)
-printable = frozenset(string.printable)
-def clean_text(t,rm_map):
-    return t.translate(rm_map)
+        self.COUNT_BASE = {
+            'strip_accents':None, 'stop_words':'english', 'ngram_range':(1, 1), 'analyzer':'word', 'max_df':1.0, 'min_df':1, 'max_features':None, 'binary':False
+            }
 
-def strip_non_ascii(t):
-    return filter(lambda x: x in printable, t) 
+        self.remove_punct_map = dict((ord(char), u' ') for char in string.punctuation)
+        self.remove_digit_map = dict((ord(char), u' ') for char in string.digits)
+        self.printable = frozenset(string.printable)
 
-def extract_data(data):
-    for i,d in enumerate(data):
-        try:
-            if 'extracted_text' in d['ad']:
-                text = d['ad']['extracted_text']
-            else:
-                text = d['ad']['extractions']['text']['results'][0]    
-            if d['class'] == 'positive':
-                yield text.replace('\n',' '),1,i
-            else:
-                yield text.replace('\n',' '),0,i
-        except:
-            print d
+    def clean_text(self,t,rm_map):
+        return t.translate(rm_map)
+
+    def strip_non_ascii(self,t):
+        return filter(lambda x: x in self.printable, t) 
+
 
 raw_text,labels,indices = zip(*[ d for d in extract_data(data)])
-
 ascii_text = [strip_non_ascii(t) for t in raw_text]
-
-from sklearn.feature_extraction.text import CountVectorizer
 
 def get_features(data,options):
         #if this operation is very expensive then we should store the results
@@ -92,15 +76,17 @@ def call_experiment(args):
     print f1
     return {'loss': -f1, 'status': STATUS_OK}    
 
+if __name__ == '__main__':
+    raw_text,labels,indices = zip(*[ d for d in extract_data(data)])
+    ascii_text = [strip_non_ascii(t) for t in raw_text]
 
-
-trials = Trials()
-best = fmin(call_experiment,
-            space=space,
-            algo=tpe.suggest,
-            max_evals=100,
-            trials=trials)
-print best
-print space_eval(space, best)
-print "losses:", [-l for l in trials.losses()]
-print max([-l for l in trials.losses()])
+    trials = Trials()
+    best = fmin(call_experiment,
+                space=space,
+                algo=tpe.suggest,
+                max_evals=100,
+                trials=trials)
+    print best
+    print space_eval(space, best)
+    print "losses:", [-l for l in trials.losses()]
+    print max([-l for l in trials.losses()])

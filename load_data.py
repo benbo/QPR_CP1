@@ -28,8 +28,7 @@ def load_files(file_names=None):
     data = []
     for file_name in file_names:
         with open(file_name, 'r') as f:
-            for line in f:
-                data.append(json.loads(line))
+            data+=[json.loads(line) for line in f]
     text, labels, indices, ad_id = zip(*[d for d in _extract_data(data)])
     return text, labels, indices, ad_id
 
@@ -47,8 +46,8 @@ def _extract_data(data):
             else:
                 text = d['ad']['extractions']['text']['results'][0]    
             if d['class'] == 'positive':
-                yield cleaner.clean_text(text), 1, i, data[0]['ad']['_id']
+                yield text, 1, i, d['ad']['_id']
             else:
-                yield cleaner.clean_text(text), 0, i, data[0]['ad']['_id']
+                yield text, 0, i, d['ad']['_id']
         except:
             print d
