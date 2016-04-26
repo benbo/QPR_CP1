@@ -1,4 +1,5 @@
 import json
+from collections import izip
 
 
 class TextCleaner(object):
@@ -29,8 +30,12 @@ def load_files(file_names=None):
     for file_name in file_names:
         with open(file_name, 'r') as f:
             data+=[json.loads(line) for line in f]
-    text, labels, indices, ad_id,phone = zip(*[d for d in _extract_data(data)])
-    return text, labels, indices, ad_id,phone
+    text, labels, indices, ad_id,phone = zip(*(d for d in _extract_data(data)))
+    #return dictionaries of ad_id:text,ad_id:label,ad_id:phone
+    text_dict = {key:value for key,value in izip(ad_id,text)}
+    label_dict = {key:value for key,value in izip(ad_id,labels)}
+    phone_dict = {key:value for key,value in izip(ad_id,phone)}
+    return text_dict,label_dict,phone_dict
 
 
 def _extract_data(data):
