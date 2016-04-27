@@ -88,7 +88,7 @@ class Featurizer(object):
 
 
 class ClassifierLearner(object):
-    def __init__(self, labels, text, num_folds=5):
+    def __init__(self, labels, text, num_folds=5,folds=None):
         #process and prepare text
         self.Featurizer = Featurizer()
         non_ascii = [self.Featurizer.strip_non_ascii(t) for t in text]
@@ -96,7 +96,11 @@ class ClassifierLearner(object):
         #store labels
         self.labels = labels
         #set up CV
-        self.skf = StratifiedKFold(labels, num_folds, random_state=137)
+        if not folds is None:
+            self.skf = folds
+        else:
+            self.skf = StratifiedKFold(labels, num_folds, random_state=137)
+       
 
     def call_experiment(self, args):
         """
