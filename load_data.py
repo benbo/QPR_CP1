@@ -27,12 +27,8 @@ def load_files(file_names=None):
     """
     if file_names is None:
         file_names = ['data/ht_training_UPDATED.gz', 'data/ht_training_2.gz']
-    text, labels, ad_id,phone = zip(*(d for d in _extract_data(file_names)))
-    #return dictionaries of ad_id:text,ad_id:label,ad_id:phone
-    text_dict = {key:value for key,value in izip(ad_id,text)}
-    label_dict = {key:value for key,value in izip(ad_id,labels)}
-    phone_dict = {key:value for key,value in izip(ad_id,phone)}
-    return text_dict,label_dict,phone_dict
+    text, labels, ad_id, phone = zip(*(d for d in _extract_data(file_names)))
+    return text, labels, ad_id, phone
 
 
 def _extract_data(filenames):

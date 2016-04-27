@@ -88,17 +88,15 @@ class Featurizer(object):
 
 
 class ClassifierLearner(object):
-    def __init__(self, label_dict, text_dict, num_folds=5):
+    def __init__(self, labels, text, num_folds=5):
         #process and prepare text
         self.Featurizer = Featurizer()
-        keys = text_dict.keys()
-        raw_text = [text_dict[k] for k in keys]
-        non_ascii = [self.Featurizer.strip_non_ascii(t) for t in raw_text]
-        self.text = {'raw':raw_text,'ascii':non_ascii}
+        non_ascii = [self.Featurizer.strip_non_ascii(t) for t in text]
+        self.text = {'raw':text,'ascii':non_ascii}
         #store labels
-        self.labels = [label_dict[k] for k in keys]
+        self.labels = labels
         #set up CV
-        self.skf = StratifiedKFold(self.labels, num_folds, random_state=137)
+        self.skf = StratifiedKFold(labels, num_folds, random_state=137)
 
     def call_experiment(self, args):
         """
@@ -152,7 +150,6 @@ class ClassifierLearner(object):
         return self.get_model(args),featurizer 
 
 if __name__ == '__main__':
-    #text_dict,label_dict,phone_dict = load_files(['data/ht_training_UPDATED.gz'])
-    text_dict,label_dict,phone_dict = load_files()
-    CL = ClassifierLearner(label_dict, text_dict, num_folds=5)
-    CL.run(max_evals=5)
+    text, labels, ad_id, phone = load_files()
+    CL = ClassifierLearner(labels, text, num_folds=5)
+    mode, featurizer = CL.run(max_evals=5)
