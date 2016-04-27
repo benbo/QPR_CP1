@@ -8,10 +8,14 @@ class Fold(object):
     """
     Folding using various deduplication strategies
     """
-    def __init__(self, text, phone_numbers, jaccard_threshold=0.9, number_hash_functions=128, number_processes=1):
+    def __init__(self, text, phone_numbers, labels, jaccard_threshold=0.9, number_hash_functions=128, number_processes=1):
         """
         :param text: List of record text
         :param phone_numbers: List of phone numbers
+        :param labels: List of class labels
+        :param jaccard_threshold: Threshold to use in MinHash KwikCluster
+        :param number_hash_functions: Number of hash functions to use in MinHash
+        :param number_processes: Number of processes to use in MinHash
         """
         minhash = MinHash(number_hash_functions)
         minhash.hash_corpus_list(text, number_threads=number_processes)
@@ -19,6 +23,7 @@ class Fold(object):
         bands.add_signatures(minhash.signatures, number_threads=number_processes)
         self._kwik_clusters = kwik_cluster(minhash, bands, jaccard_threshold)
         self._kwik_labels = clusters_to_labels(self._kwik_clusters)
+        self._class_labels = labels
 
     def get_kwik_dedupkfolds(self, k):
         """
@@ -41,6 +46,15 @@ class Fold(object):
         :return folds: sklearn fold iterator
         """
         folds = cross_validation.LabelKFold(self._kwik_labels, k)
+        return folds
+
+    def get_naive_folds(self, k):
+        """
+        Naive stratified k-folds, does not consider duplicate information
+        :param k: Number of folds
+        :return folds: sklearn fold iterator
+        """
+        folds = cross_validation.StratifiedKFold(self._class_labels, k)
         return folds
 
 
