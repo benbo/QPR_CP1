@@ -16,7 +16,7 @@ class TextCleaner(object):
         return text.translate(self.remove_white_map)
 
 
-def load_files(file_names=None):
+def load_files(file_names=None,max_lines=None):
     """
     :param file_names: List of files paths to load
     :return text: List of text, one string per ad
@@ -27,15 +27,16 @@ def load_files(file_names=None):
     """
     if file_names is None:
         file_names = ['data/ht_training_UPDATED.gz', 'data/ht_training_2.gz']
-    text, labels, ad_id, phone = zip(*(d for d in _extract_data(file_names)))
+    text, labels, ad_id, phone = zip(*(d for d in _extract_data(file_names,max_lines=max_lines)))
     return text, labels, ad_id, phone
 
 
-def _extract_data(filenames):
+def _extract_data(filenames,max_lines=None):
     """
     Extracts ad text, id, and label (0 or 1)s
     :param filenames: gz files containing json objects
     """
+    count=0
     for file_name in filenames:
         with gz.open(file_name,'r') as f:
             for line in f:
@@ -46,8 +47,11 @@ def _extract_data(filenames):
                     else:
                         text = d['ad']['extractions']['text']['results'][0]    
                     if d['class'] == 'positive':
-                        yield text, 1, d['ad']['_id'],tuple(d['phone'])
+                        yield text.encode('utf8'), 1, d['ad']['_id'],tuple(d['phone'])
                     else:
-                        yield text, 0, d['ad']['_id'],tuple(d['phone'])
+                        yield text.encode('utf8'), 0, d['ad']['_id'],tuple(d['phone'])
+                    count+=1
                 except:
                     print d
+                if count == max_lines:
+                    break
