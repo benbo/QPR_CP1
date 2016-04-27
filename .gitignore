@@ -1,3 +1,6 @@
+# PyCharm files
+.idea/
+
 # Large data files
 data/*
 
