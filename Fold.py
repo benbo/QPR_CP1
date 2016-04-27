@@ -4,6 +4,7 @@ from sklearn import cross_validation
 import random
 import numpy as np
 
+
 class Fold(object):
     """
     Folding using various deduplication strategies
@@ -36,7 +37,7 @@ class Fold(object):
         deduped_idx = np.array([random.sample(cluster, 1)[0] for cluster in self._kwik_clusters])
         number_clusters = len(self._kwik_clusters)
         original_folds = cross_validation.KFold(number_clusters, k)
-        folds = [(deduped_idx[train_idx], deduped_idx[test_idx] for train_idx, test_idx in original_folds)]
+        folds = [(deduped_idx[train_idx], deduped_idx[test_idx]) for train_idx, test_idx in original_folds]
         return folds
 
     def get_kwik_labelkfolds(self, k):
@@ -61,10 +62,11 @@ class Fold(object):
 def clusters_to_labels(clusters):
     """
     :param clusters: Frozen set of frozen sets, each frozen set is a set of record ids
-    :return labels: Dict of [record id, cluster label]
+    :return labels: Numpy array of cluster labels
     """
-    labels = dict()
+    label_dict = dict()
     for label, cluster in enumerate(clusters):
         for idx in cluster:
-            labels[idx] = label
+            label_dict[idx] = label
+    labels = np.array([label_dict[idx] for idx in range(0, len(label_dict))])  # should be 0 indexed
     return labels
