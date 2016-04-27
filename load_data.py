@@ -1,4 +1,6 @@
 import json
+import gzip as gz
+from itertools import izip
 
 
 class TextCleaner(object):
@@ -25,29 +27,28 @@ def load_files(file_names=None):
     :return phone: List of tuples, each tuple contains strings of each phone number in ad
     """
     if file_names is None:
-        file_names = ['data/ht_training_UPDATED', 'data/ht_training_2']
-    data = []
-    for file_name in file_names:
-        with open(file_name, 'r') as f:
-            data+=[json.loads(line) for line in f]
-    text, labels, indices, ad_id, phone = zip(*[d for d in _extract_data(data)])
-    return text, labels, indices, ad_id, phone
+        file_names = ['data/ht_training_UPDATED.gz', 'data/ht_training_2.gz']
+    text, labels, ad_id, phone = zip(*(d for d in _extract_data(file_names)))
+    return text, labels, ad_id, phone
 
 
-def _extract_data(data):
+def _extract_data(filenames):
     """
     Extracts ad text, id, and label (0 or 1)s
-    :param data: JSON object
+    :param filenames: gz files containing json objects
     """
-    for i, d in enumerate(data):
-        try:
-            if 'extracted_text' in d['ad']:
-                text = d['ad']['extracted_text']
-            else:
-                text = d['ad']['extractions']['text']['results'][0]    
-            if d['class'] == 'positive':
-                yield text, 1, i, d['ad']['_id'],tuple(d['phone'])
-            else:
-                yield text, 0, i, d['ad']['_id'],tuple(d['phone'])
-        except:
-            print d
+    for file_name in filenames:
+        with gz.open(file_name,'r') as f:
+            for line in f:
+                d = json.loads(line)
+                try:
+                    if 'extracted_text' in d['ad']:
+                        text = d['ad']['extracted_text']
+                    else:
+                        text = d['ad']['extractions']['text']['results'][0]    
+                    if d['class'] == 'positive':
+                        yield text, 1, d['ad']['_id'],tuple(d['phone'])
+                    else:
+                        yield text, 0, d['ad']['_id'],tuple(d['phone'])
+                except:
+                    print d
