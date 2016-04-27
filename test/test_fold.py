@@ -6,8 +6,8 @@ __author__ = 'mbarnes1'
 
 class MyTestCase(unittest.TestCase):
     def setUp(self):
-        text, self.labels, ad_id, self.phones = load_files()
-        self.folds = Fold(text, self.phones, self.labels, number_processes=10)
+        text, self.labels, ad_id, self.phones = load_files(max_lines=500)
+        self.folds = Fold(text, self.phones, self.labels, number_processes=4)
 
     def test_folds(self):
         k = 5
