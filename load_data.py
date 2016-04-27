@@ -18,10 +18,11 @@ class TextCleaner(object):
 def load_files(file_names=None):
     """
     :param file_names: List of files paths to load
-    :return text: List of text
-    :return labels: List of labels
-    :return indices: List of indices
-    :return ad_id: List of ad ids
+    :return text: List of text, one string per ad
+    :return labels: List of labels, one per ad
+    :return indices: List of indices, one per ad
+    :return ad_id: List of ad ids, one per ad
+    :return phone: List of tuples, each tuple contains strings of each phone number in ad
     """
     if file_names is None:
         file_names = ['data/ht_training_UPDATED', 'data/ht_training_2']
@@ -29,8 +30,8 @@ def load_files(file_names=None):
     for file_name in file_names:
         with open(file_name, 'r') as f:
             data+=[json.loads(line) for line in f]
-    text, labels, indices, ad_id,phone = zip(*[d for d in _extract_data(data)])
-    return text, labels, indices, ad_id,phone
+    text, labels, indices, ad_id, phone = zip(*[d for d in _extract_data(data)])
+    return text, labels, indices, ad_id, phone
 
 
 def _extract_data(data):
