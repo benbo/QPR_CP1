@@ -1,6 +1,5 @@
 import json
 import gzip as gz
-from itertools import izip
 
 
 class TextCleaner(object):
