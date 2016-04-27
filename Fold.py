@@ -1,7 +1,8 @@
 from KwikCluster.MinHash import MinHash, Banding
 from KwikCluster.KwikCluster import kwik_cluster
 from sklearn import cross_validation
-
+import random
+import numpy as np
 
 class Fold(object):
     """
@@ -13,7 +14,7 @@ class Fold(object):
         :param phone_numbers: List of phone numbers
         """
         minhash = MinHash(number_hash_functions)
-        minhash.hash_corpus_dictionary(text, number_threads=number_processes)
+        minhash.hash_corpus_list(text, number_threads=number_processes)
         bands = Banding(number_hash_functions, jaccard_threshold)
         bands.add_signatures(minhash.signatures, number_threads=number_processes)
         self._kwik_clusters = kwik_cluster(minhash, bands, jaccard_threshold)
@@ -27,7 +28,11 @@ class Fold(object):
         """
         # need a list of labels. Then sklearn will return iterator of which samples belong in this fold. But then I
         # need to remap this iterator to the original ad ids
-        
+        deduped_idx = np.array([random.sample(cluster, 1)[0] for cluster in self._kwik_clusters])
+        number_clusters = len(self._kwik_clusters)
+        original_folds = cross_validation.KFold(number_clusters, k)
+        folds = [(deduped_idx[train_idx], deduped_idx[test_idx] for train_idx, test_idx in original_folds)]
+        return folds
 
     def get_kwik_labelkfolds(self, k):
         """
