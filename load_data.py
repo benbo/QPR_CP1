@@ -17,7 +17,7 @@ class TextCleaner(object):
         return text.translate(self.remove_white_map)
 
 
-def load_files(file_names=None):
+def load_files(file_names=None,max_lines=None):
     """
     :param file_names: List of files paths to load
     :return text: List of text, one string per ad
@@ -28,7 +28,7 @@ def load_files(file_names=None):
     """
     if file_names is None:
         file_names = ['data/ht_training_UPDATED.gz', 'data/ht_training_2.gz']
-    text, labels, ad_id, phone = zip(*(d for d in _extract_data(file_names)))
+    text, labels, ad_id, phone = zip(*(d for d in _extract_data(file_names,max_lines=max_lines)))
     return text, labels, ad_id, phone
 
 
