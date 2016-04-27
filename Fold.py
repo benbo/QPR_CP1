@@ -1,5 +1,5 @@
 from KwikCluster.MinHash import MinHash, Banding
-from KwikCluster.KwikCluster import kwik_cluster
+from KwikCluster.KwikCluster import kwik_cluster_minhash, kwik_cluster_dict
 from sklearn import cross_validation
 import random
 import numpy as np
@@ -12,41 +12,63 @@ class Fold(object):
     def __init__(self, text, phone_numbers, labels, jaccard_threshold=0.9, number_hash_functions=128, number_processes=1):
         """
         :param text: List of record text
-        :param phone_numbers: List of phone numbers
+        :param phone_numbers: List of tuples, each tuple contains strings of each phone number in ad
         :param labels: List of class labels
         :param jaccard_threshold: Threshold to use in MinHash KwikCluster
         :param number_hash_functions: Number of hash functions to use in MinHash
         :param number_processes: Number of processes to use in MinHash
         """
+        self._class_labels = labels
         minhash = MinHash(number_hash_functions)
         minhash.hash_corpus_list(text, number_threads=number_processes)
         bands = Banding(number_hash_functions, jaccard_threshold)
         bands.add_signatures(minhash.signatures, number_threads=number_processes)
-        self._kwik_clusters = kwik_cluster(minhash, bands, jaccard_threshold)
-        self._kwik_labels = clusters_to_labels(self._kwik_clusters)
-        self._class_labels = labels
+        self._minhash_clusters = kwik_cluster_minhash(minhash, bands, jaccard_threshold)
+        phone_dict = {doc_idx: set(phone_numbers) for (doc_idx, phone_numbers) in enumerate(phone_numbers)}
+        self._phone_clusters = kwik_cluster_dict(phone_dict)
 
-    def get_kwik_dedupkfolds(self, k):
+    def get_minhash_dedupkfolds(self, k):
         """
-        Sample 1 record per cluster, with standard k-fold
+        Sample 1 record per kwik cluster, with standard k-fold
         :param k: Number of folds
         :return folds: List of folds
         """
-        # need a list of labels. Then sklearn will return iterator of which samples belong in this fold. But then I
-        # need to remap this iterator to the original ad ids
-        deduped_idx = np.array([random.sample(cluster, 1)[0] for cluster in self._kwik_clusters])
-        number_clusters = len(self._kwik_clusters)
+        deduped_idx = np.array([random.sample(cluster, 1)[0] for cluster in self._minhash_clusters])
+        number_clusters = len(self._minhash_clusters)
         original_folds = cross_validation.KFold(number_clusters, k)
         folds = [(deduped_idx[train_idx], deduped_idx[test_idx]) for train_idx, test_idx in original_folds]
         return folds
 
-    def get_kwik_labelkfolds(self, k):
+    def get_minhash_labelkfolds(self, k):
         """
         Label k-fold using KwikCluster labels. Split folds such that same kwik cluster does not appear in multiple folds
         :param k: Number of folds
         :return folds: sklearn fold iterator
         """
-        folds = cross_validation.LabelKFold(self._kwik_labels, k)
+        minhash_labels = clusters_to_labels(self._minhash_clusters)
+        folds = cross_validation.LabelKFold(minhash_labels, k)
+        return folds
+
+    def get_phone_dedupkfolds(self, k):
+        """
+        Sample 1 record per phone cluster, with standard k-fold
+        :param k: Number of folds
+        :return folds: List of folds
+        """
+        deduped_idx = np.array([random.sample(cluster, 1)[0] for cluster in self._phone_clusters])
+        number_clusters = len(self._phone_clusters)
+        original_folds = cross_validation.KFold(number_clusters, k)
+        folds = [(deduped_idx[train_idx], deduped_idx[test_idx]) for train_idx, test_idx in original_folds]
+        return folds
+
+    def get_phone_labelkfolds(self, k):
+        """
+        Label k-fold using phone cluster labels. Split folds such that same kwik cluster does not appear in multiple folds
+        :param k: Number of folds
+        :return folds: sklearn fold iterator
+        """
+        phone_labels = clusters_to_labels(self._phone_clusters)
+        folds = cross_validation.LabelKFold(phone_labels, k)
         return folds
 
     def get_naive_folds(self, k):
