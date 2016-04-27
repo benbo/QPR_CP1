@@ -5,9 +5,10 @@ __author__ = 'mbarnes1'
 
 class MyTestCase(unittest.TestCase):
     def setUp(self):
-        self.text, self.labels, self.indices, self.ad_id = load_files()
+        self.text, self.labels, self.indices, self.ad_id = load_files(max_lines=5000)
 
     def test_load_files(self):
+        self.assertEqual(len(self.text), 5000)
         self.assertEqual(len(self.text), len(self.labels))
         self.assertEqual(len(self.text), len(self.indices))
         self.assertEqual(len(self.text), len(self.ad_id))
