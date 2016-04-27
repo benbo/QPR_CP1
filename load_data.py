@@ -32,11 +32,12 @@ def load_files(file_names=None):
     return text, labels, ad_id, phone
 
 
-def _extract_data(filenames):
+def _extract_data(filenames,max_lines=None):
     """
     Extracts ad text, id, and label (0 or 1)s
     :param filenames: gz files containing json objects
     """
+    count=0
     for file_name in filenames:
         with gz.open(file_name,'r') as f:
             for line in f:
@@ -47,8 +48,11 @@ def _extract_data(filenames):
                     else:
                         text = d['ad']['extractions']['text']['results'][0]    
                     if d['class'] == 'positive':
-                        yield text, 1, d['ad']['_id'],tuple(d['phone'])
+                        yield text.encode('utf8'), 1, d['ad']['_id'],tuple(d['phone'])
                     else:
-                        yield text, 0, d['ad']['_id'],tuple(d['phone'])
+                        yield text.encode('utf8'), 0, d['ad']['_id'],tuple(d['phone'])
+                    count+=1
                 except:
                     print d
+                if count == max_lines:
+                    break
