@@ -18,7 +18,7 @@ class Fold(object):
         :param number_hash_functions: Number of hash functions to use in MinHash
         :param number_processes: Number of processes to use in MinHash
         """
-        self._class_labels = labels
+        self._class_labels = np.array(labels)
         minhash = MinHash(number_hash_functions)
         minhash.hash_corpus_list(text, number_threads=number_processes)
         bands = Banding(number_hash_functions, jaccard_threshold)
@@ -29,13 +29,13 @@ class Fold(object):
 
     def get_minhash_dedupkfolds(self, k):
         """
-        Sample 1 record per kwik cluster, with standard k-fold
+        Sample 1 record per kwik cluster, with stratified k-fold (based on class label of the sampled record)
         :param k: Number of folds
-        :return folds: List of folds
+        :return folds: List of folds, each fold is a tuple of (array of train indices, array of test indices)
         """
         deduped_idx = np.array([random.sample(cluster, 1)[0] for cluster in self._minhash_clusters])
-        number_clusters = len(self._minhash_clusters)
-        original_folds = cross_validation.KFold(number_clusters, k)
+        deduped_class_label = self._class_labels[deduped_idx]
+        original_folds = cross_validation.StratifiedKFold(deduped_class_label, n_folds=k)
         folds = [(deduped_idx[train_idx], deduped_idx[test_idx]) for train_idx, test_idx in original_folds]
         return folds
 
@@ -51,13 +51,13 @@ class Fold(object):
 
     def get_phone_dedupkfolds(self, k):
         """
-        Sample 1 record per phone cluster, with standard k-fold
+        Sample 1 record per phone cluster, with stratified k-fold (based on class label of the sampled record)
         :param k: Number of folds
-        :return folds: List of folds
+        :return folds: List of folds, each fold is a tuple of (array of train indices, array of test indices)
         """
         deduped_idx = np.array([random.sample(cluster, 1)[0] for cluster in self._phone_clusters])
-        number_clusters = len(self._phone_clusters)
-        original_folds = cross_validation.KFold(number_clusters, k)
+        deduped_class_label = self._class_labels[deduped_idx]
+        original_folds = cross_validation.StratifiedKFold(deduped_class_label, n_folds=k)
         folds = [(deduped_idx[train_idx], deduped_idx[test_idx]) for train_idx, test_idx in original_folds]
         return folds
 
