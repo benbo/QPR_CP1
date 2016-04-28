@@ -10,6 +10,7 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import cross_val_score
 from sklearn.feature_extraction.text import CountVectorizer
 from load_data import load_files
+from string import maketrans
 
 class Featurizer(object):
     def __init__(self,args=None):
@@ -23,12 +24,17 @@ class Featurizer(object):
             'max_features': None,
             'binary': False
             }
-        self.remove_punct_map = dict((ord(char), u' ') for char in string.punctuation)
-        self.remove_digit_map = dict((ord(char), u' ') for char in string.digits)
+        #for unicode:
+        #self.remove_punct_map = dict((ord(char), u' ') for char in string.punctuation)
+        #self.remove_digit_map = dict((ord(char), u' ') for char in string.digits)
+        #for string:
+        self.remove_punct_map = maketrans(string.punctuation,' '*len(string.punctuation))
+        self.remove_digit_map = maketrans(string.digits,' '*len(string.digits))
         self.printable = frozenset(string.printable)
         self.strip_digits=False
         self.strip_punct=False
         self.ascii_only = False
+        self.vec = None
         if not args is None:
             feat_options = args['features']
             for key,value in self.COUNT_BASE.items():
@@ -52,14 +58,13 @@ class Featurizer(object):
         """
         return text.translate(rm_map)
     
-    @staticmethod
-    def get_features(data, options):
+    def get_features(self,data, options):
         #if this operation is very expensive then we should store the results
-        vec = CountVectorizer(strip_accents=options['strip_accents'], stop_words=options['stop_words'],
+        self.vec = CountVectorizer(strip_accents=options['strip_accents'], stop_words=options['stop_words'],
                               ngram_range=options['ngram_range'], analyzer=options['analyzer'],
                                 max_df=options['max_df'], min_df=options['min_df'],
                               max_features=options['max_features'], binary = options['binary'])
-        return vec.fit_transform(data)
+        return self.vec.fit_transform(data)
 
     def set_options(self,args):
         feat_options = args['features']
@@ -85,11 +90,22 @@ class Featurizer(object):
 
         return self.get_features(text,self.options)
 
+    def run_testdata(self,text):
+        if self.ascii_only:
+            text = [self.strip_non_ascii(t) for t in text]
+        if self.strip_digits:
+            text = [self.clean_text(t, self.remove_digit_map) for t in text]
+        if self.strip_punct:
+            text = [self.clean_text(t, self.remove_punct_map) for t in text]
+
+        return self.vec.transform(text)
 
 
 class ClassifierLearner(object):
-    def __init__(self, labels, text, num_folds=5,folds=None):
+    def __init__(self, labels, text, num_folds=5,folds=None,cjobs=2,cvjobs=10):
         #process and prepare text
+        self.cjobs=cjobs#n_jobs parameter for classifier
+        self.cvjobs = cvjobs #n_jobs parameter for cross validation
         self.Featurizer = Featurizer()
         non_ascii = [self.Featurizer.strip_non_ascii(t) for t in text]
         self.text = {'raw':text,'ascii':non_ascii}
@@ -117,21 +133,20 @@ class ClassifierLearner(object):
 
         X = self.Featurizer.run(text)
 
-        f1 = cross_val_score(model, X, self.labels, cv=self.skf, scoring='f1', n_jobs=8).mean()
+        f1 = cross_val_score(model, X, self.labels, cv=self.skf, scoring='f1', n_jobs=self.cvjobs).mean()
 
         print f1
         return {'loss': -f1, 'status': STATUS_OK}    
 
-    @staticmethod
-    def get_model(args):
+    def get_model(self,args):
         if args['model']['model'] == 'LR':
-            model = lr(penalty=args['model']['regularizer_lr'], C=args['model']['C_lr'])
+            model = lr(penalty=args['model']['regularizer_lr'], C=args['model']['C_lr'],n_jobs=self.cjobs)
         elif args['model']['model'] == 'SVM':
             if args['model']['regularizer_svm'] == 'l1':
                 #squared hinge loss not available when penalty is l1. 
-                model = svm.LinearSVC(C=args['model']['C_svm'], penalty=args['model']['regularizer_svm'],dual=False)#loss='hinge')
+                model = svm.LinearSVC(C=args['model']['C_svm'], penalty=args['model']['regularizer_svm'],dual=False,n_jobs=self.cjobs)#loss='hinge')
             else:
-                model = svm.LinearSVC(C=args['model']['C_svm'], penalty=args['model']['regularizer_svm'])
+                model = svm.LinearSVC(C=args['model']['C_svm'], penalty=args['model']['regularizer_svm'],n_jobs=self.cjobs)
         return model
 
     def run(self,max_evals=100):
