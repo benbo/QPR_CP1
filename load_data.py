@@ -39,18 +39,23 @@ def _extract_data(filenames, max_lines=None):
     """
     count = 0
     for file_name in filenames:
-        with gz.open(file_name,'r') as f:
+        if count >= max_lines:
+            break
+        with gz.open(file_name, 'r') as f:
             for line in f:
                 d = json.loads(line)
                 try:
                     if 'extracted_text' in d['ad']:
                         text = d['ad']['extracted_text']
                     else:
-                        text = d['ad']['extractions']['text']['results'][0]    
-                    if d['class'] == 'positive':
-                        yield text.encode('utf8'), 1, d['ad']['_id'],tuple(d['phone'])
+                        text = d['ad']['extractions']['text']['results'][0]
+                    if 'class' in d:
+                        if d['class'] == 'positive':
+                            yield text.encode('utf8'), 1, d['ad']['_id'], tuple(d['phone'])
+                        else:
+                            yield text.encode('utf8'), 0, d['ad']['_id'], tuple(d['phone'])
                     else:
-                        yield text.encode('utf8'), 0, d['ad']['_id'],tuple(d['phone'])
+                        yield text.encode('utf8'), None, d['ad']['_id'], tuple(d['phone'])
                     count += 1
                 except:
                     print d
