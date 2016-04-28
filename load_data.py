@@ -39,7 +39,7 @@ def _extract_data(filenames, max_lines=None):
     """
     count = 0
     for file_name in filenames:
-        if count >= max_lines:
+        if count == max_lines:
             break
         with gz.open(file_name, 'r') as f:
             for line in f:
@@ -59,5 +59,5 @@ def _extract_data(filenames, max_lines=None):
                     count += 1
                 except:
                     print d
-                if count >= max_lines:
+                if count == max_lines:
                     break
